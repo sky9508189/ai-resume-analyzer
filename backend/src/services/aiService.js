@@ -1,14 +1,15 @@
 const OpenAI = require("openai");
 
-let openai;
+let deepseek;
 
-const getOpenAI = () => {
-  if (!openai) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+const getClient = () => {
+  if (!deepseek) {
+    deepseek = new OpenAI({
+      apiKey: process.env.DEEPSEEK_API_KEY,
+      baseURL: "https://api.deepseek.com",
     });
   }
-  return openai;
+  return deepseek;
 };
 
 const analyzeResume = async (resumeText) => {
@@ -39,14 +40,16 @@ Provide your analysis in the following JSON format (no markdown, pure JSON):
   "formattingScore": <number 0-100>
 }
 
-Be thorough and constructive. For ATS scoring, consider keyword density, formatting, and relevant industry terms. Include at least 10 keywords in keywordAnalysis.`;
+Be thorough and constructive. For ATS scoring, consider keyword density, formatting, and relevant industry terms. Include at least 10 keywords in keywordAnalysis.
 
-  const response = await getOpenAI().chat.completions.create({
-    model: "gpt-4o-mini",
+IMPORTANT: Respond with ONLY the JSON object, no other text.`;
+
+  const response = await getClient().chat.completions.create({
+    model: "deepseek-chat",
     messages: [
       {
         role: "system",
-        content: "You are an expert ATS resume analyzer. You always respond with valid JSON only, no markdown formatting.",
+        content: "You are an expert ATS resume analyzer. Respond with valid JSON only, no markdown formatting, no code blocks.",
       },
       {
         role: "user",
@@ -54,7 +57,6 @@ Be thorough and constructive. For ATS scoring, consider keyword density, formatt
       },
     ],
     temperature: 0.3,
-    response_format: { type: "json_object" },
   });
 
   const content = response.choices[0]?.message?.content;
@@ -63,7 +65,9 @@ Be thorough and constructive. For ATS scoring, consider keyword density, formatt
     throw new Error("Failed to get analysis from AI");
   }
 
-  return JSON.parse(content);
+  const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  return JSON.parse(cleaned);
 };
 
 module.exports = { analyzeResume };
