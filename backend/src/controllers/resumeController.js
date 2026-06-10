@@ -42,9 +42,10 @@ const analyzeResumeText = async (req, res) => {
       const filePath = path.join(__dirname, "../../uploads", resume.fileName);
 
       if (resume.fileType === "application/pdf") {
-        const pdfParse = require("pdf-parse");
+        const { PDFParse } = require("pdf-parse");
         const dataBuffer = fs.readFileSync(filePath);
-        const pdfData = await pdfParse(dataBuffer);
+        const pdf = new PDFParse({ data: dataBuffer });
+        const pdfData = await pdf.getText();
         extractedText = pdfData.text;
       } else if (
         resume.fileType ===
